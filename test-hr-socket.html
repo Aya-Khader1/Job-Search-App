@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Dashboard — Live</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #e2e8f0;
+    padding: 32px 20px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .container { width: 100%; max-width: 640px; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.5);
+  }
+
+  .header h1 { font-size: 20px; font-weight: 700; color: #f8fafc; }
+  .header p { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+
+  .status-badge {
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.1);
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    transition: all 0.3s;
+  }
+
+  .status-badge.online { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+
+  .status-badge.online .status-dot {
+    background: #4ade80;
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.2); }
+    50% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0.08); }
+  }
+
+  .card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .input-group { display: flex; gap: 10px; }
+
+  input {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.6);
+    color: #f1f5f9;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: #6366f1; }
+  input::placeholder { color: #64748b; }
+
+  button {
+    padding: 13px 24px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+
+  button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.6); }
+  button:active { transform: translateY(0); }
+
+  .feed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .feed-title { font-size: 15px; font-weight: 700; color: #f8fafc; }
+
+  .feed-count {
+    font-size: 12px;
+    color: #64748b;
+    background: rgba(148, 163, 184, 0.1);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .feed { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+  .feed::-webkit-scrollbar { width: 5px; }
+  .feed::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: #475569; }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+  .empty-state p { font-size: 13px; }
+
+  .item {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .item-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+
+  .item.connected { background: rgba(34, 197, 94, 0.08); }
+  .item.connected .item-icon { background: rgba(34, 197, 94, 0.15); }
+
+  .item.notification { background: rgba(99, 102, 241, 0.08); }
+  .item.notification .item-icon { background: rgba(99, 102, 241, 0.15); }
+
+  .item.error { background: rgba(239, 68, 68, 0.08); }
+  .item.error .item-icon { background: rgba(239, 68, 68, 0.15); }
+
+  .item-content { flex: 1; min-width: 0; }
+  .item-title { font-size: 13.5px; font-weight: 600; color: #f1f5f9; }
+  .item-meta { font-size: 11.5px; color: #64748b; margin-top: 3px; font-family: monospace; word-break: break-all; }
+  .item-time { font-size: 11px; color: #64748b; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="avatar">👔</div>
+    <div>
+      <h1>HR Dashboard</h1>
+      <p>استقبال إشعارات فورية</p>
+    </div>
+    <div class="status-badge" id="statusBadge">
+      <span class="status-dot"></span>
+      <span id="statusText">غير متصل</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 توكن الدخول</div>
+    <div class="input-group">
+      <input type="text" id="tokenInput" placeholder="الصق التوكن هون..." />
+      <button onclick="connect()">اتصل</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="feed-header">
+      <span class="feed-title">📡 الأحداث اللحظية</span>
+      <span class="feed-count" id="feedCount">0</span>
+    </div>
+    <div class="feed" id="feed">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">🔔</div>
+        <p>مافيش أحداث لسا... بانتظار التقديمات</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  let count = 0;
+
+  function addItem(type, icon, title, meta) {
+    count++;
+    document.getElementById("emptyState")?.remove();
+    document.getElementById("feedCount").textContent = count;
+
+    const feed = document.getElementById("feed");
+    const item = document.createElement("div");
+    item.className = "item " + type;
+    item.innerHTML = `
+      <div class="item-icon">${icon}</div>
+      <div class="item-content">
+        <div class="item-title">${title}</div>
+        ${meta ? `<div class="item-meta">${meta}</div>` : ""}
+      </div>
+      <div class="item-time">${new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
+    `;
+    feed.prepend(item);
+  }
+
+  function setStatus(online) {
+    const badge = document.getElementById("statusBadge");
+    const text = document.getElementById("statusText");
+    badge.classList.toggle("online", online);
+    text.textContent = online ? "متصل الآن" : "غير متصل";
+  }
+
+  function connect() {
+    const token = document.getElementById("tokenInput").value.trim();
+    if (!token) return alert("لازم تحط التوكن أول");
+
+    const socket = io("http://localhost:3000", {
+      auth: { token: token },
+    });
+
+    socket.on("connect", () => {
+      setStatus(true);
+      addItem("connected", "✅", "اتصلت بنجاح", `Socket ID: ${socket.id}`);
+    });
+
+    socket.on("connect_error", (err) => {
+      setStatus(false);
+      addItem("error", "❌", "فشل الاتصال", err.message);
+    });
+
+    socket.on("newApplication", (data) => {
+      addItem("notification", "🔔", data.message || "تقديم جديد", `Job: ${data.jobId} • App: ${data.applicationId}`);
+    });
+
+    socket.on("disconnect", () => {
+      setStatus(false);
+      addItem("error", "🔌", "انقطع الاتصال");
+    });
+  }
+</script>
+</body>
+</html>

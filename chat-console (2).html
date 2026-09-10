@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relay — Chat Console</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root {
+    --paper: #FAF9F6;
+    --panel: #FFFFFF;
+    --ink: #1F2933;
+    --muted: #78828C;
+    --line: #E7E4DC;
+    --teal: #1F6F5C;
+    --teal-dim: #E4EFEC;
+    --coral: #C15A47;
+    --coral-dim: #F5E7E3;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  button, input {
+    font-family: inherit;
+  }
+
+  /* ============ LOGIN VIEW ============ */
+  #loginView {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 32px;
+  }
+
+  .login-card h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+  }
+
+  .login-card .lede {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+  }
+
+  .field-group { margin-bottom: 14px; }
+
+  .field-group label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13.5px;
+    background: var(--paper);
+    color: var(--ink);
+    transition: border-color 0.12s;
+  }
+  .input:focus { outline: none; border-color: var(--teal); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 11px 0;
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary:not(:disabled):hover { background: #195C4C; }
+
+  .login-error {
+    background: var(--coral-dim);
+    color: var(--coral);
+    font-size: 12.5px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  .divider-text {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin: 18px 0 12px 0;
+  }
+
+  .token-toggle {
+    text-align: center;
+    font-size: 12px;
+    color: var(--teal);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  /* ============ APP VIEW ============ */
+  #appView { display: none; height: 100vh; }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: 52px 1fr;
+    height: 100vh;
+  }
+
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .who-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .who-badge .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--teal);
+  }
+
+  .who-badge .role-pill {
+    font-size: 11px;
+    background: var(--teal-dim);
+    color: var(--teal);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .logout {
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .logout:hover { color: var(--coral); }
+
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 18px;
+    overflow-y: auto;
+  }
+
+  .section-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: none;
+    margin: 0 0 10px 0;
+  }
+
+  .section { margin-bottom: 22px; }
+
+  .mini-btn {
+    width: 100%;
+    padding: 9px 0;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .mini-btn:hover { background: #33404A; }
+
+  .log-box {
+    background: #F3F2EE;
+    border-radius: 7px;
+    padding: 8px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    color: #5B6570;
+    height: 130px;
+    overflow-y: auto;
+  }
+  .log-box .err { color: var(--coral); }
+  .log-box .ok { color: var(--teal); }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+  }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .chat-header .name { font-size: 14.5px; font-weight: 600; }
+  .chat-header .sub { font-size: 12px; color: var(--muted); }
+
+  .thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    color: var(--muted);
+    max-width: 280px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .row { display: flex; }
+  .row.mine { justify-content: flex-end; }
+
+  .bubble {
+    max-width: 60%;
+    padding: 9px 13px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .row:not(.mine) .bubble { background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 3px; }
+  .row.mine .bubble { background: var(--teal); color: white; border-bottom-right-radius: 3px; }
+
+  .bubble time { display: block; font-size: 10px; opacity: 0.6; margin-top: 4px; }
+
+  .composer {
+    display: flex;
+    gap: 8px;
+    padding: 14px 22px;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+  }
+
+  .composer input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font-size: 13.5px;
+  }
+  .composer input:focus { outline: none; border-color: var(--teal); }
+
+  .composer button {
+    padding: 0 18px;
+    border-radius: 20px;
+    background: var(--teal);
+    color: white;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .composer button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  ::-webkit-scrollbar { width: 7px; }
+  ::-webkit-scrollbar-thumb { background: #D9D5CB; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN VIEW ============ -->
+<div id="loginView">
+  <div class="login-card">
+    <h1>Sign in to Relay</h1>
+    <p class="lede">Uses your real login endpoint to fetch a token, then opens the chat console.</p>
+
+    <div class="login-error" id="loginError"></div>
+
+    <div class="field-group">
+      <label>Server URL</label>
+      <input class="input" id="serverUrl" value="http://localhost:3000">
+    </div>
+    <div class="field-group">
+      <label>Email</label>
+      <input class="input" id="email" placeholder="hr@company.com">
+    </div>
+    <div class="field-group">
+      <label>Password</label>
+      <input class="input" id="password" type="password" placeholder="••••••••">
+    </div>
+
+    <button class="btn-primary" id="loginBtn">Sign in</button>
+
+    <div class="divider-text">or</div>
+    <div class="token-toggle" id="tokenToggle">I already have a token</div>
+
+    <div id="tokenPanel" style="display:none; margin-top:14px;">
+      <div class="field-group">
+        <label>Access token</label>
+        <input class="input" id="manualToken" placeholder="Paste accessToken…">
+      </div>
+      <button class="btn-primary" id="tokenLoginBtn" style="background:var(--ink)">Connect with token</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP VIEW ============ -->
+<div id="appView">
+  <div class="shell">
+
+    <div class="topbar">
+      <div class="who-badge">
+        <span class="dot"></span>
+        <span id="topStatus">Connected</span>
+        <span class="role-pill" id="rolePill">HR / Owner</span>
+      </div>
+      <div class="logout" id="logoutBtn">Sign out</div>
+    </div>
+
+    <div class="sidebar">
+
+      <div class="section">
+        <p class="section-title">Acting as</p>
+        <select class="input" id="roleSelect">
+          <option value="hr">HR / Owner</option>
+          <option value="user">Candidate</option>
+        </select>
+      </div>
+
+      <div class="section" id="starterSection">
+        <p class="section-title">Start a conversation</p>
+        <input class="input" id="companyId" placeholder="Company ID" style="margin-bottom:8px;">
+        <input class="input" id="receiverId" placeholder="Candidate user ID" style="margin-bottom:8px;">
+        <input class="input" id="starterMessage" placeholder="Opening message">
+        <button class="mini-btn" id="startBtn">Start conversation</button>
+      </div>
+
+      <div class="section">
+        <p class="section-title">Open existing chat</p>
+        <input class="input" id="chatIdInput" placeholder="Paste chatId…">
+      </div>
+
+      <div class="section">
+        <p class="section-title">Event log</p>
+        <div class="log-box" id="eventLog">Idle</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="chat-header">
+        <div>
+          <div class="name" id="peerName">No conversation open</div>
+          <div class="sub" id="peerSub">Start one, or open an existing chat ID</div>
+        </div>
+        <div class="sub" id="chatPill">no chat</div>
+      </div>
+
+      <div class="thread" id="thread">
+        <div class="empty-state">Messages will appear here once a conversation is open.</div>
+      </div>
+
+      <div class="composer">
+        <input id="messageInput" placeholder="Write a message…" disabled>
+        <button id="sendBtn" disabled>Send</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  let socket = null;
+  let currentChatId = null;
+
+  // ---------- Login view logic ----------
+  el('tokenToggle').onclick = () => {
+    const panel = el('tokenPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  };
+
+  function showLoginError(msg) {
+    const box = el('loginError');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  el('loginBtn').onclick = async () => {
+    const serverUrl = el('serverUrl').value.trim();
+    const email = el('email').value.trim();
+    const password = el('password').value.trim();
+
+    if (!serverUrl || !/^https?:\/\//i.test(serverUrl)) {
+      return showLoginError('Server URL must start with http:// or https:// — e.g. http://localhost:3000');
+    }
+    if (!email || !password) return showLoginError('Enter both email and password.');
+
+    el('loginBtn').disabled = true;
+    el('loginBtn').textContent = 'Signing in…';
+
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Login failed');
+
+      const token = json?.data?.credentials?.accessToken;
+      if (!token) throw new Error('No accessToken in response — check the API shape.');
+
+      enterApp(serverUrl, token);
+    } catch (err) {
+      if (err instanceof TypeError) {
+        showLoginError('Could not reach the server. Is it running at ' + serverUrl + '?');
+      } else {
+        showLoginError(err.message);
+      }
+    } finally {
+      el('loginBtn').disabled = false;
+      el('loginBtn').textContent = 'Sign in';
+    }
+  };
+
+  el('tokenLoginBtn').onclick = () => {
+    const serverUrl = el('serverUrl').value.trim();
+    const token = el('manualToken').value.trim();
+    if (!token) return showLoginError('Paste a token first.');
+    enterApp(serverUrl, token);
+  };
+
+  // ---------- App view logic ----------
+  function enterApp(serverUrl, token) {
+    el('loginView').style.display = 'none';
+    el('appView').style.display = 'block';
+
+    socket = io(serverUrl, { auth: { token: `Bearer ${token}` } });
+
+    socket.on('connect', () => log('connected', 'ok'));
+    socket.on('disconnect', () => log('disconnected', 'err'));
+    socket.on('connect_error', (e) => log('connect_error: ' + e.message, 'err'));
+    socket.on('error', (p) => log('error: ' + (p?.message || JSON.stringify(p)), 'err'));
+
+    socket.on('messageSent', (payload) => {
+      log('messageSent → chat ' + payload.chatId, 'ok');
+      openChat(payload.chatId);
+      renderMessage(payload, true);
+    });
+
+    socket.on('newMessage', (payload) => {
+      log('newMessage ← chat ' + payload.chatId);
+      if (payload.chatId === currentChatId) renderMessage(payload, false);
+    });
+  }
+
+  el('logoutBtn').onclick = () => {
+    if (socket) socket.disconnect();
+    location.reload();
+  };
+
+  el('roleSelect').onchange = (e) => {
+    const role = e.target.value;
+    el('starterSection').style.display = role === 'hr' ? 'block' : 'none';
+    el('rolePill').textContent = role === 'hr' ? 'HR / Owner' : 'Candidate';
+  };
+
+  function log(msg, cls = '') {
+    const box = el('eventLog');
+    if (box.textContent === 'Idle') box.textContent = '';
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = `${new Date().toLocaleTimeString()} — ${msg}`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  el('startBtn').onclick = () => {
+    const companyId = el('companyId').value.trim();
+    const receiverId = el('receiverId').value.trim();
+    const message = el('starterMessage').value.trim();
+    if (!companyId || !receiverId || !message) return log('fill company, candidate and message', 'err');
+
+    socket.emit('startConversation', { receiverId, companyId, message });
+    log('emitted startConversation → ' + receiverId);
+    el('peerName').textContent = 'Candidate ' + receiverId.slice(-6);
+    el('peerSub').textContent = 'Conversation just started';
+  };
+
+  el('chatIdInput').addEventListener('change', (e) => {
+    const id = e.target.value.trim();
+    if (id) {
+      openChat(id);
+      el('peerName').textContent = 'Resumed chat';
+      el('peerSub').textContent = id;
+    }
+  });
+
+  function openChat(chatId) {
+    currentChatId = chatId;
+    el('chatPill').textContent = chatId;
+    el('messageInput').disabled = false;
+    el('sendBtn').disabled = false;
+    const empty = document.querySelector('.empty-state');
+    if (empty) empty.remove();
+  }
+
+  el('sendBtn').onclick = sendMessage;
+  el('messageInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+  function sendMessage() {
+    const text = el('messageInput').value.trim();
+    if (!text || !currentChatId) return;
+    socket.emit('sendMessage', { chatId: currentChatId, message: text });
+    el('messageInput').value = '';
+  }
+
+  function renderMessage(payload, mine) {
+    const thread = el('thread');
+    const row = document.createElement('div');
+    row.className = 'row' + (mine ? ' mine' : '');
+    const time = new Date(payload.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = payload.message;
+    const t = document.createElement('time');
+    t.textContent = time;
+    bubble.appendChild(t);
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+  }
+</script>
+
+</body>
+</html>

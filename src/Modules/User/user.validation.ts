@@ -21,9 +21,19 @@ export const updateProfileSchema = {
 
     DOB: z.coerce
       .date()
-      .max(new Date(), "Date of birth cannot be in the future")
-      .optional(),
-
+      .refine((date) => date < new Date(), {
+        message: "Date of birth must be before today",
+      })
+      .refine(
+        (date) => {
+          const today = new Date();
+          today.setFullYear(today.getFullYear() - 18);
+          return date <= today;
+        },
+        {
+          message: "Age must be greater than 18",
+        },
+      ),
     gender: z.enum(["MALE", "FEMALE"]).optional(),
   }),
 };

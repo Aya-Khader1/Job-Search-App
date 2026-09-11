@@ -219,9 +219,7 @@ class AuthService {
       },
     });
     if (!user) throw new NotFoundException("Invalid email or OTP has expired");
-    const otpRecord = user.OTP?.find(
-      (o) => o.type === OTP_TYPE.FORGET_PASSWORD,
-    );
+    const otpRecord = user.OTP?.find((o) => o.type === OTP_TYPE.RESET_PASSWORD);
     if (!otpRecord) throw new BadRequestException("OTP not found");
     const isMatch = await compareHash(otp, otpRecord.code);
     if (!isMatch) {
@@ -233,7 +231,7 @@ class AuthService {
       },
       {
         password: await generateHash(newPassword),
-        changeCredentialTime: Date.now(),
+        changeCredentialTime: new Date(),
       },
     );
     return res.status(200).json({ message: "Password reset successfully" });

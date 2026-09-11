@@ -20,6 +20,7 @@ import {
   find,
   findById,
   findOne,
+  findOneAndDelete,
   findOneAndUpdate,
   updateOne,
 } from "../../DB/db.repository";
@@ -122,7 +123,10 @@ class jobService {
     if (job.companyId.toString() !== company._id.toString())
       throw new ForbiddenException("This job does not belong to your company");
 
-    const deletedJob = await JobModel.findByIdAndDelete(jobId);
+    const deletedJob = await findOneAndDelete({
+      model: JobModel,
+      filter: { _id: jobId },
+    });
 
     if (!deletedJob) throw new BadRequestException("Failed to delete job");
 
@@ -154,7 +158,7 @@ class jobService {
 
     const skip = (page - 1) * limit;
     const [jobs, totalJobs] = await Promise.all([
-      await find({
+      find({
         model: JobModel,
         filter: { companyId },
         options: { skip, limit, sort: "-createdAt" },
@@ -224,7 +228,7 @@ class jobService {
           totalJobs,
           page,
           limit,
-          totalPages: totalJobs / limit,
+          totalPages: Math.ceil(totalJobs / limit),
         },
       },
     });
@@ -241,7 +245,7 @@ class jobService {
     };
     const skip = (page - 1) * limit;
     const [applications, totalApplications] = await Promise.all([
-      await find({
+      find({
         model: ApplicationModel,
         filter: { jobId },
         options: {

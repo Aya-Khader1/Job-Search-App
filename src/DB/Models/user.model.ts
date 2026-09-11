@@ -10,6 +10,7 @@ export interface IAttachment {
 export enum OTP_TYPE {
   CONFIRM_EMAIL = "confirmEmail",
   FORGET_PASSWORD = "forgetPassword",
+  RESET_PASSWORD = "resetPassword",
 }
 export interface IOtp {
   code: string;

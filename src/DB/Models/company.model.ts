@@ -1,6 +1,8 @@
 import { HydratedDocument, Model, Schema, Types, model } from "mongoose";
 import { IUser } from "./user.model";
 import { Query } from "mongoose";
+import { deleteMany } from "../db.repository";
+import { JobModel } from "./job.model";
 
 export interface IAttachment {
   secure_url: string;
@@ -130,16 +132,32 @@ export const companySchema = new Schema<ICompany>(
     toObject: { virtuals: true },
   },
 );
+companySchema.pre("findOneAndDelete", async function (next) {
+  try {
+    const company = await this.model.findOne(this.getFilter());
+    if (!company) return next();
+    const jobs = await JobModel.find({ companyId: company._id }).select("_id");
+
+    for (const job of jobs) {
+      await JobModel.findOneAndDelete({ _id: job._id });
+    }
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
 companySchema.pre(["find", "findOne"], function (next) {
   this.where({ deletedAt: { $exists: false } });
   next();
 });
+
 companySchema.virtual("jobs", {
   ref: "Job",
   localField: "_id",
   foreignField: "companyId",
 });
 companySchema.index({ companyName: 1 });
+
 export const CompanyModel: Model<ICompany> = model<ICompany>(
   "Company",
   companySchema,

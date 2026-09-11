@@ -26,6 +26,13 @@ export const bootsrap = async (): Promise<void> => {
   const app: Express = express();
   app.use(express.json());
   await connectDB();
+  app.use(
+    helmet(),
+    cors({
+      origin: "*",
+    }),
+    customRateLimiter,
+  );
   app.all(
     "/graphql",
     createHandler({
@@ -37,13 +44,6 @@ export const bootsrap = async (): Promise<void> => {
       },
     }),
   );
-  app.use(
-    helmet(),
-    cors({
-      origin: "*",
-    }),
-  );
-
   app.use("/api/v1/auth", AuthController);
   app.use("/api/v1/user", UserController);
   app.use("/admin", AdminController);

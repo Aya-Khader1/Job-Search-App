@@ -1,4 +1,6 @@
 import { HydratedDocument, Model, Schema, Types, model } from "mongoose";
+import { deleteMany, findOne } from "../db.repository";
+import { ApplicationModel } from "./application.model";
 
 export enum JobLocation {
   onsite = "onsite",
@@ -100,9 +102,23 @@ const jobSchema = new Schema<IJob>(
   },
 );
 jobSchema.virtual("applications", {
-  ref: "application",
+  ref: "Application",
   localField: "_id",
   foreignField: "applicationId",
+});
+jobSchema.pre("findOneAndDelete", async function (next) {
+  try {
+    const job = await this.model.findOne(this.getFilter());
+    if (!job) return next();
+
+    await deleteMany({
+      model: ApplicationModel,
+      filter: { jobId: job._id },
+    });
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
 });
 export const JobModel: Model<IJob> = model<IJob>("Job", jobSchema);
 

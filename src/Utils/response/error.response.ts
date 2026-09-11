@@ -55,7 +55,7 @@ export const globalHandeler = (
 ): void => {
   const statusCode = err.statusCode || 500;
   const isDev = env.ENV_MODE === "DEVELOPMENT";
-  if (statusCode > 500) console.log(err);
+  if (statusCode >= 500) console.log(err);
 
   res.status(statusCode).json({
     message: err.message,

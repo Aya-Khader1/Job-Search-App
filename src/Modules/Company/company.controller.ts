@@ -70,4 +70,9 @@ router.delete(
   companyService.deleteCoverPic,
 );
 
+router.get(
+  "/export-applicatios/:companyId",
+  isCompanyOwner,
+  companyService.exportApplicationsSchema,
+);
 export default router;

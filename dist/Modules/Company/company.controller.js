@@ -58,4 +58,5 @@ router.patch("/upload-logo/:companyId", (0, cloudinary_1.fileUpload)().single("i
 router.delete("/delete-logo/:companyId", isCompanyOwner_middleware_1.isCompanyOwner, company_service_1.default.deleteLogo);
 router.post("/upload-cover-pics/:companyId", (0, cloudinary_1.fileUpload)().array("images", 5), (0, cloudinary_1.fileTypeValidation)(cloudinary_1.fileValidation.images), isCompanyOwner_middleware_1.isCompanyOwner, company_service_1.default.uploadCoverPic);
 router.delete("/delete-cover-pic/:companyId", isCompanyOwner_middleware_1.isCompanyOwner, company_service_1.default.deleteCoverPic);
+router.get("/export-applicatios/:companyId", isCompanyOwner_middleware_1.isCompanyOwner, company_service_1.default.exportApplicationsSchema);
 exports.default = router;

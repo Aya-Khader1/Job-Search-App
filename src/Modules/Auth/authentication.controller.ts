@@ -13,7 +13,7 @@ router.post(
   validation(validators.confirmEmailSchema),
   authService.confirmEmail,
 );
-router.post("/login", validation(validators.signInSchema), authService.login);
+router.post("/login", authService.login);
 
 router.post(
   "/google/login",

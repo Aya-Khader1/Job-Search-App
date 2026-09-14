@@ -49,7 +49,7 @@ exports.TooManyRequestsException = TooManyRequestsException;
 const globalHandeler = (err, req, res, next) => {
     const statusCode = err.statusCode || 500;
     const isDev = config_service_1.env.ENV_MODE === "DEVELOPMENT";
-    if (statusCode > 500)
+    if (statusCode >= 500)
         console.log(err);
     res.status(statusCode).json({
         message: err.message,

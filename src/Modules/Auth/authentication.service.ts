@@ -80,9 +80,9 @@ class AuthService {
     const { email, password }: ISignInDTO = req.body;
     const user = await UserModel.findOne({
       email,
-      isConfirmed: { $exists: true },
       provider: PROVIDER.SYSTEM,
-      deletedAt: null,
+      isConfirmed: true,
+      deletedAt: { $exists: false },
     });
     if (!user) throw new NotFoundException("Invalid Account");
     if (!(await compareHash(password, user.password as string)))
@@ -213,13 +213,15 @@ class AuthService {
       isConfirmed: true,
       OTP: {
         $elemMatch: {
-          type: OTP_TYPE.CONFIRM_EMAIL,
+          type: OTP_TYPE.FORGET_PASSWORD,
           expiresIn: { $gt: new Date() },
         },
       },
     });
     if (!user) throw new NotFoundException("Invalid email or OTP has expired");
-    const otpRecord = user.OTP?.find((o) => o.type === OTP_TYPE.RESET_PASSWORD);
+    const otpRecord = user.OTP?.find(
+      (o) => o.type === OTP_TYPE.FORGET_PASSWORD,
+    );
     if (!otpRecord) throw new BadRequestException("OTP not found");
     const isMatch = await compareHash(otp, otpRecord.code);
     if (!isMatch) {

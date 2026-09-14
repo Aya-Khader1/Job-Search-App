@@ -9,10 +9,7 @@ import {
   chatController,
   UserController,
 } from "./Modules/index";
-import {
-  globalHandeler,
-  UnauthorizedException,
-} from "./Utils/response/error.response";
+import { globalHandeler } from "./Utils/response/error.response";
 import { customRateLimiter } from "./Middlewares/rate-limit.middleware";
 import { CompanyController } from "./Modules/Company";
 import { AdminController } from "./Modules/Admin";
@@ -31,7 +28,7 @@ export const bootsrap = async (): Promise<void> => {
     cors({
       origin: "*",
     }),
-    customRateLimiter,
+    customRateLimiter(),
   );
   app.all(
     "/graphql",
@@ -44,6 +41,11 @@ export const bootsrap = async (): Promise<void> => {
       },
     }),
   );
+  app.get("/api/v1/test", (req, res) => {
+    res.json({
+      message: "API works",
+    });
+  });
   app.use("/api/v1/auth", AuthController);
   app.use("/api/v1/user", UserController);
   app.use("/admin", AdminController);
@@ -51,15 +53,13 @@ export const bootsrap = async (): Promise<void> => {
   app.use("/api/v1/company", CompanyController);
   app.use("/api/v1/job", jobController);
   app.use("/api/v1/chat", chatController);
-
-  app.get("/", (req: Request, res: Response) => {
-    console.log("Application is running");
+  app.get("/", (req, res) => {
+    res.send("Hello");
   });
-
   app.use(globalHandeler);
   startExpiredOtpCleanupJob();
-  const httpServer = app.listen(env.PORT, () => {
+  app.listen(Number(env.PORT), () => {
     console.log(`Server is running on http://localhost:${env.PORT}`);
   });
-  intializeSocket(httpServer);
+  //  intializeSocket(httpServer);
 };

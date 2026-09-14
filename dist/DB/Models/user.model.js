@@ -10,6 +10,7 @@ var OTP_TYPE;
 (function (OTP_TYPE) {
     OTP_TYPE["CONFIRM_EMAIL"] = "confirmEmail";
     OTP_TYPE["FORGET_PASSWORD"] = "forgetPassword";
+    OTP_TYPE["RESET_PASSWORD"] = "resetPassword";
 })(OTP_TYPE || (exports.OTP_TYPE = OTP_TYPE = {}));
 exports.userSchema = new mongoose_1.Schema({
     firstName: {

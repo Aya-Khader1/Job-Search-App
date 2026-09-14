@@ -9,6 +9,9 @@ const error_response_1 = require("../../Utils/response/error.response");
 const user_enum_1 = require("../../Utils/enums/user.enum");
 const cloudinary_config_1 = __importDefault(require("../../config/cloudinary.config"));
 const cloudinary_1 = require("../../Utils/upload/cloudinary");
+const application_model_1 = require("../../DB/Models/application.model");
+const job_model_1 = require("../../DB/Models/job.model");
+const exceljs_1 = __importDefault(require("exceljs"));
 class companyService {
     constructor() { }
     addCompany = async (req, res) => {
@@ -49,8 +52,7 @@ class companyService {
         if (!existingCompany) {
             throw new error_response_1.NotFoundException("Company not found");
         }
-        if (existingCompany.createdBy.toString() !== req.user._id.toString() &&
-            req.user.role !== user_enum_1.ROLE.ADMIN) {
+        if (existingCompany.createdBy.toString() !== req.user._id.toString()) {
             throw new error_response_1.ForbiddenException("You are not authorized to update this company");
         }
         const updatedCompany = await (0, db_repository_1.updateOne)({
@@ -76,7 +78,7 @@ class companyService {
     };
     getSpecificCompany = async (req, res) => {
         const { companyId } = req.params;
-        const company = await (0, db_repository_1.find)({
+        const company = await (0, db_repository_1.findOne)({
             model: company_model_1.CompanyModel,
             filter: { _id: companyId },
             options: {
@@ -226,6 +228,60 @@ class companyService {
         return res.status(200).json({
             message: "Cover picture deleted successfully",
         });
+    };
+    exportApplicationsSchema = async (req, res) => {
+        const { date } = req.query;
+        if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            throw new error_response_1.BadRequestException('Query parameter "date" must be in YYYY-MM-DD format');
+        }
+        //2026-09-08T18:26:19.776+00:00
+        const startOfDay = new Date(`${date}T00:00:00.000Z`);
+        const endOfDay = new Date(`${date}T23:59:59.999Z`);
+        const jobs = await (0, db_repository_1.find)({
+            model: job_model_1.JobModel,
+            filter: { companyId: req.company._id },
+        });
+        const jobsId = jobs.map((job) => job._id);
+        if (jobsId.length === 0)
+            throw new error_response_1.NotFoundException("This company has no jobs yet");
+        const applications = await (0, db_repository_1.find)({
+            model: application_model_1.ApplicationModel,
+            filter: {
+                jobId: { $in: jobsId },
+                createdAt: { $gte: startOfDay, $lte: endOfDay },
+            },
+            options: {
+                populate: [
+                    { path: "userId", select: "firstName lastName email" },
+                    { path: "jobId", select: "jobTitle" },
+                ],
+            },
+        });
+        if (applications.length === 0)
+            throw new error_response_1.NotFoundException("No applications found for this company on this date");
+        const workbook = new exceljs_1.default.Workbook();
+        const sheet = workbook.addWorksheet("Applications");
+        sheet.columns = [
+            { header: "Applicant Name", key: "name", width: 25 },
+            { header: "Email", key: "email", width: 30 },
+            { header: "Job Title", key: "jobTitle", width: 30 },
+            { header: "Status", key: "status", width: 15 },
+            { header: "Applied At", key: "appliedAt", width: 22 },
+        ];
+        applications.forEach((app) => {
+            sheet.addRow({
+                name: `${app.userId?.firstName || ""} ${app.userId?.lastName || ""}`.trim(),
+                email: app.userId?.email || "N/A",
+                jobTitle: app.jobId?.jobTitle || "N/A",
+                status: app.status,
+                appliedAt: new Date(app.createdAt).toLocaleString(),
+            });
+        });
+        const fileName = `applications-${date}.xlsx`;
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+        await workbook.xlsx.write(res);
+        res.end();
     };
 }
 exports.default = new companyService();

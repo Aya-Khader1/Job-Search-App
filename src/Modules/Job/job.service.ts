@@ -214,12 +214,7 @@ class jobService {
       }),
       count({ model: JobModel, filter }),
     ]);
-    console.log({
-      totalJobs,
-      limit,
-      page,
-      totalPages: Math.ceil(totalJobs / limit),
-    });
+
     return res.status(200).json({
       message: "Jobs fetched successfully",
       data: {
@@ -342,9 +337,9 @@ class jobService {
         populate: [
           {
             path: "user",
-            select: "",
+            select: "firstName lastName email",
           },
-          { path: "job", select: "" },
+          { path: "job", select: "jobTitle companyId" },
         ],
       },
     });

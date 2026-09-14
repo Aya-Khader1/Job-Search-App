@@ -76,7 +76,10 @@ class jobService {
         const company = req.company;
         if (job.companyId.toString() !== company._id.toString())
             throw new error_response_1.ForbiddenException("This job does not belong to your company");
-        const deletedJob = await job_model_1.JobModel.findByIdAndDelete(jobId);
+        const deletedJob = await (0, db_repository_1.findOneAndDelete)({
+            model: job_model_1.JobModel,
+            filter: { _id: jobId },
+        });
         if (!deletedJob)
             throw new error_response_1.BadRequestException("Failed to delete job");
         return res.status(200).json({
@@ -100,7 +103,7 @@ class jobService {
         }
         const skip = (page - 1) * limit;
         const [jobs, totalJobs] = await Promise.all([
-            await (0, db_repository_1.find)({
+            (0, db_repository_1.find)({
                 model: job_model_1.JobModel,
                 filter: { companyId },
                 options: { skip, limit, sort: "-createdAt" },
@@ -142,12 +145,6 @@ class jobService {
             }),
             (0, db_repository_1.count)({ model: job_model_1.JobModel, filter }),
         ]);
-        console.log({
-            totalJobs,
-            limit,
-            page,
-            totalPages: Math.ceil(totalJobs / limit),
-        });
         return res.status(200).json({
             message: "Jobs fetched successfully",
             data: {
@@ -156,7 +153,7 @@ class jobService {
                     totalJobs,
                     page,
                     limit,
-                    totalPages: totalJobs / limit,
+                    totalPages: Math.ceil(totalJobs / limit),
                 },
             },
         });
@@ -166,7 +163,7 @@ class jobService {
         const { page, limit, sort = "-createdAt", } = req.query;
         const skip = (page - 1) * limit;
         const [applications, totalApplications] = await Promise.all([
-            await (0, db_repository_1.find)({
+            (0, db_repository_1.find)({
                 model: application_model_1.ApplicationModel,
                 filter: { jobId },
                 options: {
@@ -260,9 +257,9 @@ class jobService {
                 populate: [
                     {
                         path: "user",
-                        select: "",
+                        select: "firstName lastName email",
                     },
-                    { path: "job", select: "" },
+                    { path: "job", select: "jobTitle companyId" },
                 ],
             },
         });

@@ -23,8 +23,16 @@ exports.updateProfileSchema = {
             .optional(),
         DOB: zod_1.default.coerce
             .date()
-            .max(new Date(), "Date of birth cannot be in the future")
-            .optional(),
+            .refine((date) => date < new Date(), {
+            message: "Date of birth must be before today",
+        })
+            .refine((date) => {
+            const today = new Date();
+            today.setFullYear(today.getFullYear() - 18);
+            return date <= today;
+        }, {
+            message: "Age must be greater than 18",
+        }),
         gender: zod_1.default.enum(["MALE", "FEMALE"]).optional(),
     }),
 };

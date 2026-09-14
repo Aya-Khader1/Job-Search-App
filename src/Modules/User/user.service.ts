@@ -32,19 +32,19 @@ class userService {
       gender,
     }: IUpdateProfileDTO = req.body;
     if (mobileNumber !== undefined) user.mobileNumber = encrypt(mobileNumber);
-
+    const update = {
+      ...(firstName && { firstName }),
+      ...(lastName && { lastName }),
+      ...(mobileNumber && { mobileNumber }),
+      ...(DOB && { DOB }),
+      ...(gender && { gender }),
+    };
     const updatedUser = await findOneAndUpdate({
       model: UserModel,
       filter: {
         _id: user._id,
       },
-      update: {
-        mobileNumber: user.mobileNumber,
-        DOB,
-        firstName,
-        lastName,
-        gender,
-      },
+      update,
       options: { new: true },
     });
     if (!updatedUser) {
@@ -62,7 +62,7 @@ class userService {
     if (!user) throw new NotFoundException("User not found");
 
     return res.status(200).json({
-      message: "Updated Profile",
+      message: "User profile retrieved successfully",
       data: { user },
     });
   };
@@ -81,7 +81,7 @@ class userService {
     const user = await findOne({
       model: UserModel,
       filter: { _id: userId },
-      select: "firstName lastName mobileNumber profilePic coverPic -_id",
+      select: " mobileNumber profilePic coverPic -_id",
     });
 
     if (!user) {
@@ -234,7 +234,7 @@ class userService {
     const updated = await findOneAndUpdate({
       model: UserModel,
       filter: { _id: req.user._id },
-      update: { $pull: { coverPic: public_id } },
+      update: { $pull: { coverPic: { public_id } } },
     });
     if (!updated) {
       throw new BadRequestException("Failed to delete cover picture");

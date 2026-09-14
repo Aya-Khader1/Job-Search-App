@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CompanyModel = exports.companySchema = exports.employeeRanges = void 0;
 const mongoose_1 = require("mongoose");
+const job_model_1 = require("./job.model");
 exports.employeeRanges = [
     "1-10",
     "11-20",
@@ -88,6 +89,21 @@ exports.companySchema = new mongoose_1.Schema({
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
+});
+exports.companySchema.pre("findOneAndDelete", async function (next) {
+    try {
+        const company = await this.model.findOne(this.getFilter());
+        if (!company)
+            return next();
+        const jobs = await job_model_1.JobModel.find({ companyId: company._id }).select("_id");
+        for (const job of jobs) {
+            await job_model_1.JobModel.findOneAndDelete({ _id: job._id });
+        }
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 });
 exports.companySchema.pre(["find", "findOne"], function (next) {
     this.where({ deletedAt: { $exists: false } });

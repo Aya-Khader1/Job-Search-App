@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JobModel = exports.SeniorityLevel = exports.WorkingTime = exports.JobLocation = void 0;
 const mongoose_1 = require("mongoose");
+const db_repository_1 = require("../db.repository");
+const application_model_1 = require("./application.model");
 var JobLocation;
 (function (JobLocation) {
     JobLocation["onsite"] = "onsite";
@@ -82,8 +84,23 @@ const jobSchema = new mongoose_1.Schema({
     toObject: { virtuals: true },
 });
 jobSchema.virtual("applications", {
-    ref: "application",
+    ref: "Application",
     localField: "_id",
     foreignField: "applicationId",
+});
+jobSchema.pre("findOneAndDelete", async function (next) {
+    try {
+        const job = await this.model.findOne(this.getFilter());
+        if (!job)
+            return next();
+        await (0, db_repository_1.deleteMany)({
+            model: application_model_1.ApplicationModel,
+            filter: { jobId: job._id },
+        });
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 });
 exports.JobModel = (0, mongoose_1.model)("Job", jobSchema);

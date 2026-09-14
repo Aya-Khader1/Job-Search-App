@@ -61,9 +61,9 @@ class AuthService {
         const { email, password } = req.body;
         const user = await user_model_1.UserModel.findOne({
             email,
-            isConfirmed: { $exists: true },
             provider: user_enum_1.PROVIDER.SYSTEM,
-            deletedAt: null,
+            isConfirmed: true,
+            deletedAt: { $exists: false },
         });
         if (!user)
             throw new error_response_1.NotFoundException("Invalid Account");
@@ -171,7 +171,7 @@ class AuthService {
             isConfirmed: true,
             OTP: {
                 $elemMatch: {
-                    type: user_model_1.OTP_TYPE.CONFIRM_EMAIL,
+                    type: user_model_1.OTP_TYPE.FORGET_PASSWORD,
                     expiresIn: { $gt: new Date() },
                 },
             },
@@ -189,7 +189,7 @@ class AuthService {
             email,
         }, {
             password: await (0, hash_1.generateHash)(newPassword),
-            changeCredentialTime: Date.now(),
+            changeCredentialTime: new Date(),
         });
         return res.status(200).json({ message: "Password reset successfully" });
     };

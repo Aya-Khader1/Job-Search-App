@@ -17,18 +17,19 @@ class userService {
         const { mobileNumber, DOB, firstName, lastName, gender, } = req.body;
         if (mobileNumber !== undefined)
             user.mobileNumber = (0, encryption_1.encrypt)(mobileNumber);
+        const update = {
+            ...(firstName && { firstName }),
+            ...(lastName && { lastName }),
+            ...(mobileNumber && { mobileNumber }),
+            ...(DOB && { DOB }),
+            ...(gender && { gender }),
+        };
         const updatedUser = await (0, db_repository_1.findOneAndUpdate)({
             model: user_model_1.UserModel,
             filter: {
                 _id: user._id,
             },
-            update: {
-                mobileNumber: user.mobileNumber,
-                DOB,
-                firstName,
-                lastName,
-                gender,
-            },
+            update,
             options: { new: true },
         });
         if (!updatedUser) {
@@ -46,7 +47,7 @@ class userService {
         if (!user)
             throw new error_response_1.NotFoundException("User not found");
         return res.status(200).json({
-            message: "Updated Profile",
+            message: "User profile retrieved successfully",
             data: { user },
         });
     };
@@ -62,7 +63,7 @@ class userService {
         const user = await (0, db_repository_1.findOne)({
             model: user_model_1.UserModel,
             filter: { _id: userId },
-            select: "firstName lastName mobileNumber profilePic coverPic -_id",
+            select: " mobileNumber profilePic coverPic -_id",
         });
         if (!user) {
             throw new error_response_1.NotFoundException("User not found");
@@ -187,7 +188,7 @@ class userService {
         const updated = await (0, db_repository_1.findOneAndUpdate)({
             model: user_model_1.UserModel,
             filter: { _id: req.user._id },
-            update: { $pull: { coverPic: public_id } },
+            update: { $pull: { coverPic: { public_id } } },
         });
         if (!updated) {
             throw new error_response_1.BadRequestException("Failed to delete cover picture");

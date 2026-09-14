@@ -11,18 +11,21 @@ const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
 const index_1 = require("./Modules/index");
 const error_response_1 = require("./Utils/response/error.response");
+const rate_limit_middleware_1 = require("./Middlewares/rate-limit.middleware");
 const Company_1 = require("./Modules/Company");
 const Admin_1 = require("./Modules/Admin");
 const Job_1 = require("./Modules/Job");
 const express_2 = require("graphql-http/lib/use/express");
 const admin_schema_1 = require("./Modules/Admin/graphql/admin.schema");
 const admin_context_1 = require("./Modules/Admin/graphql/admin.context");
-const socket_service_1 = require("./Utils/socket/socket.service");
 const deleteExpiredOtp_cron_1 = require("./Utils/corn/deleteExpiredOtp.cron");
 const bootsrap = async () => {
     const app = (0, express_1.default)();
     app.use(express_1.default.json());
     await (0, connection_1.connectDB)();
+    app.use((0, helmet_1.default)(), (0, cors_1.default)({
+        origin: "*",
+    }), (0, rate_limit_middleware_1.customRateLimiter)());
     app.all("/graphql", (0, express_2.createHandler)({
         schema: admin_schema_1.schema,
         context: async (req) => {
@@ -31,9 +34,11 @@ const bootsrap = async () => {
             return context;
         },
     }));
-    app.use((0, helmet_1.default)(), (0, cors_1.default)({
-        origin: "*",
-    }));
+    app.get("/api/v1/test", (req, res) => {
+        res.json({
+            message: "API works",
+        });
+    });
     app.use("/api/v1/auth", index_1.AuthController);
     app.use("/api/v1/user", index_1.UserController);
     app.use("/admin", Admin_1.AdminController);
@@ -41,13 +46,13 @@ const bootsrap = async () => {
     app.use("/api/v1/job", Job_1.jobController);
     app.use("/api/v1/chat", index_1.chatController);
     app.get("/", (req, res) => {
-        console.log("Application is running");
+        res.send("Hello");
     });
     app.use(error_response_1.globalHandeler);
     (0, deleteExpiredOtp_cron_1.startExpiredOtpCleanupJob)();
-    const httpServer = app.listen(config_service_1.env.PORT, () => {
+    app.listen(Number(config_service_1.env.PORT), () => {
         console.log(`Server is running on http://localhost:${config_service_1.env.PORT}`);
     });
-    (0, socket_service_1.intializeSocket)(httpServer);
+    //  intializeSocket(httpServer);
 };
 exports.bootsrap = bootsrap;

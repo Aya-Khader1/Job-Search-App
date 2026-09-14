@@ -45,7 +45,7 @@ const token_1 = require("../../Utils/security/token");
 const router = (0, express_1.Router)();
 router.post("/signup", (0, validation_middleware_1.validation)(validators.signUpSchema), authentication_service_1.default.signup);
 router.post("/confirmEmail", (0, validation_middleware_1.validation)(validators.confirmEmailSchema), authentication_service_1.default.confirmEmail);
-router.post("/login", (0, validation_middleware_1.validation)(validators.signInSchema), authentication_service_1.default.login);
+router.post("/login", authentication_service_1.default.login);
 router.post("/google/login", (0, validation_middleware_1.validation)(validators.loginWithGoogleSchema), authentication_service_1.default.loginWithGoogle);
 router.post("/google/signup", (0, validation_middleware_1.validation)(validators.loginWithGoogleSchema), authentication_service_1.default.loginWithGoogle);
 router.post("/forget-password", (0, validation_middleware_1.validation)(validators.forgetPasswordSchema), authentication_service_1.default.forgetPassword);

@@ -64,6 +64,7 @@ Built with **Node.js, TypeScript, Express, and MongoDB**.
 | File storage | Cloudinary |
 | Scheduling | Cron jobs |
 | Security | Helmet, CORS, rate limiting |
+| Reporting | ExcelJS (Excel export) |
 
 ## Data Models
 

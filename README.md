@@ -96,15 +96,38 @@ Create a `.env` file in the project root:
 
 ```env
 PORT=3000
-MONGO_URI=mongodb://localhost:27017/job-search
-ACCESS_TOKEN_SECRET=your_secret
-REFRESH_TOKEN_SECRET=your_secret
+MODE=DEVELOPMENT
+
+# Database
+DB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/job_search_db
+
+SALT_ROUNDS=10
+
+# Email (SMTP)
+EMAIL_USERNAME=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+
+# Tokens
+ACCESS_USER_SIGNATURE=your_secret
+REFRESH_USER_SIGNATURE=your_secret
+ACCESS_ADMIN_SIGNATURE=your_secret
+REFRESH_ADMIN_SIGNATURE=your_secret
+ACCESS_TOKEN_EXPIRES_IN=3600
+REFRESH_TOKEN_EXPIRES_IN=604800
+
+# Encryption (must be 32 characters)
+ENCRYPTION_SECRET_KEY=your_32_character_secret_key
+
+# CORS
+WHITE_LIST=http://localhost:5500,http://localhost:3000
+
+# Google login
+CLIENT_ID=your_google_client_id
+
+# Cloudinary
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-EMAIL_USER=your_email
-EMAIL_PASSWORD=your_app_password
 ```
 
 ### Run in Development

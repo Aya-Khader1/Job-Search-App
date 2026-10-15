@@ -24,13 +24,17 @@ import {
   findOneAndUpdate,
   updateOne,
 } from "../../DB/db.repository";
-import { ApplicationModel } from "../../DB/Models/application.model";
+import {
+  ApplicationModel,
+  IApplication,
+} from "../../DB/Models/application.model";
 import { fileUpload, uploadToCloudinary } from "../../Utils/upload/cloudinary";
 import { populate } from "dotenv";
 import { HUserDocument } from "../../DB/Models/user.model";
 import { emailEvents } from "../../Utils/events/email.event";
 import { CompanyModel } from "../../DB/Models/company.model";
 import { getIo } from "../../Utils/socket/socket.service";
+import notificationService from "../Notification/notification.service";
 
 class jobService {
   addJob = async (req: Request, res: Response) => {
@@ -291,7 +295,7 @@ class jobService {
       req.file.buffer,
       `users/${req.user._id}/cvs`,
     );
-    const application = await createOne({
+    const application = (await createOne({
       model: ApplicationModel,
       data: {
         jobId: job._id,
@@ -301,21 +305,19 @@ class jobService {
           public_id: userCV.public_id,
         },
       },
-    });
+    })) as IApplication;
     const company = await findOne({
       model: CompanyModel,
       filter: { _id: job.companyId },
     });
     if (company) {
-      const io = getIo();
       const recipientIds = [...(company.HRs || [])];
-      recipientIds.forEach((id) => {
-        io?.to(id.toString()).emit("newApplication", {
-          message: `New application submitted for ${job.jobTitle}`,
-          jobTitle: job.jobTitle,
-          companyName: company.companyName,
-          applicantName: `${req.user.firstName} ${req.user.lastName}`,
-        });
+      await notificationService.createBulkNotifications({
+        userIds: recipientIds,
+        type: "new_application",
+        title: "New Job Application",
+        message: `${req.user.firstName} has applied for the ${job.jobTitle} position.`,
+        data: { jobId: job._id, applicationId: application._id },
       });
     }
 
@@ -357,7 +359,13 @@ class jobService {
       to: applicant.email,
       username: applicant.firstName,
     });
-
+    await notificationService.createNotification({
+      userId: applicant._id,
+      type: "application_status",
+      title: "Your Application Has Been Accepted 🎉",
+      message: `Congratulations! Your application for the  position has been accepted!`,
+      data: { applicationId: application._id, status: "accepted" },
+    });
     return res.status(200).json({
       message: `Application ${status} successfully`,
     });

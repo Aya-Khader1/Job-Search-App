@@ -91,7 +91,18 @@ export const updateOne = async <T>({
     options,
   );
 };
-
+export const updateMany = async <T>({
+  model,
+  filter,
+  update = {},
+  options = {},
+}: DBParams<T>) => {
+  return await model.updateMany(
+    filter,
+    { ...update, $inc: { __v: 1 } },
+    options,
+  );
+};
 export const findOneAndUpdate = async <T>({
   model,
   filter,

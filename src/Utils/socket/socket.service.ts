@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import { HUserDocument } from "../../DB/Models/user.model";
 import { decodedToken } from "../security/token";
 import { registerChatEvents } from "../../Modules/Chat/chat.socket";
+import { WHITE_LIST } from "../cors/cors";
 let io: Server | null = null;
 export const getIo = (): Server | null => io;
 export interface AuthedSocket extends Socket {
@@ -11,7 +12,7 @@ export interface AuthedSocket extends Socket {
 export const intializeSocket = (httpServer: HttpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: WHITE_LIST,
     },
   });
   io.use(async (socket: AuthedSocket, next) => {

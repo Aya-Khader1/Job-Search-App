@@ -315,7 +315,6 @@ class companyService {
         'Query parameter "date" must be in YYYY-MM-DD format',
       );
     }
-    //2026-09-08T18:26:19.776+00:00
     const startOfDay = new Date(`${date}T00:00:00.000Z`);
     const endOfDay = new Date(`${date}T23:59:59.999Z`);
     const jobs = await find({

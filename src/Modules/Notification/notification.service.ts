@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import {
   create,
+  createOne,
   find,
   findOneAndDelete,
   findOneAndUpdate,
@@ -45,7 +46,7 @@ class NotificationService {
       NotificationModel.countDocuments(filter),
       NotificationModel.countDocuments({
         userId: req.user._id,
-        readAt: { exists: false },
+        isRead: false,
       }),
     ]);
     return res.status(200).json({
@@ -83,7 +84,7 @@ class NotificationService {
         isRead: true,
       },
     });
-    if (updated)
+    if (!updated)
       throw new BadRequestException(
         "Notification not found or faild to update",
       );
@@ -122,11 +123,10 @@ class NotificationService {
     message,
     data,
   }: ICreateNotificationDTO) => {
-    const notifications = await create({
+    const notification = (await createOne({
       model: NotificationModel,
       data: { userId, type, title, message, data },
-    });
-    const notification = notifications[0] as INotification;
+    })) as INotification;
     const io = getIo();
     if (io) {
       io.to(String(userId)).emit("newNotification", {

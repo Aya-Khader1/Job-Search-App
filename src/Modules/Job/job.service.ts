@@ -29,12 +29,12 @@ import {
   IApplication,
 } from "../../DB/Models/application.model";
 import { fileUpload, uploadToCloudinary } from "../../Utils/upload/cloudinary";
-import { populate } from "dotenv";
 import { HUserDocument } from "../../DB/Models/user.model";
 import { emailEvents } from "../../Utils/events/email.event";
 import { CompanyModel } from "../../DB/Models/company.model";
 import { getIo } from "../../Utils/socket/socket.service";
 import notificationService from "../Notification/notification.service";
+import { NotificationTypeEnum } from "../../DB/Models/notification.model";
 
 class jobService {
   addJob = async (req: Request, res: Response) => {
@@ -252,7 +252,7 @@ class jobService {
           limit,
           sort: "-createdAt",
           populate: {
-            path: "user",
+            path: "userId",
             select: "firstName lastName email profilePic",
           },
         },
@@ -311,10 +311,10 @@ class jobService {
       filter: { _id: job.companyId },
     });
     if (company) {
-      const recipientIds = [...(company.HRs || [])];
+      const recipientIds = [company.createdBy, ...(company.HRs || [])];
       await notificationService.createBulkNotifications({
         userIds: recipientIds,
-        type: "new_application",
+        type: NotificationTypeEnum.NEW_APPLICATION,
         title: "New Job Application",
         message: `${req.user.firstName} has applied for the ${job.jobTitle} position.`,
         data: { jobId: job._id, applicationId: application._id },
@@ -338,10 +338,10 @@ class jobService {
       options: {
         populate: [
           {
-            path: "user",
+            path: "userId",
             select: "firstName lastName email",
           },
-          { path: "job", select: "jobTitle companyId" },
+          { path: "jobId", select: "jobTitle companyId" },
         ],
       },
     });
@@ -359,12 +359,18 @@ class jobService {
       to: applicant.email,
       username: applicant.firstName,
     });
+    const job = application.jobId as unknown as { jobTitle: string };
+    const accepted = status === "accepted";
     await notificationService.createNotification({
       userId: applicant._id,
-      type: "application_status",
-      title: "Your Application Has Been Accepted 🎉",
-      message: `Congratulations! Your application for the  position has been accepted!`,
-      data: { applicationId: application._id, status: "accepted" },
+      type: NotificationTypeEnum.APPLICATION_STATUS,
+      title: accepted
+        ? "Your Application Has Been Accepted 🎉"
+        : "Update on Your Application",
+      message: accepted
+        ? `Congratulations! Your application for the ${job.jobTitle} position has been accepted!`
+        : `Your application for the ${job.jobTitle} position was not selected this time.`,
+      data: { applicationId: application._id, status },
     });
     return res.status(200).json({
       message: `Application ${status} successfully`,

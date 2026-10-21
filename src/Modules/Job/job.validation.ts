@@ -88,6 +88,7 @@ export const updateApplicationStatusSchema = {
     applicationId: z
       .string()
       .regex(/^[0-9a-fA-F]{24}$/, "Invalid applicationId"),
+    companyId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid companyId"),
   }),
   body: z.strictObject({
     status: z.enum(["accepted", "rejected"], {

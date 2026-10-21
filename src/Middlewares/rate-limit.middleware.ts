@@ -10,7 +10,7 @@ type IPRequest = {
 const ipReq: Record<string, IPRequest> = {};
 const blockedIps = new Set<string>();
 const unBlockersTimers = new Map<string, NodeJS.Timeout>();
-const RATE_LIMIT = 3;
+const RATE_LIMIT = 100;
 const WINDOWS_MS = 60 * 1000;
 
 export const customRateLimiter = () => {

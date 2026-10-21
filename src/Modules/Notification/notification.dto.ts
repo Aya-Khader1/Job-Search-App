@@ -6,7 +6,7 @@ import {
 import { Types } from "mongoose";
 
 export type INotificationQuerySchema = z.infer<
-  typeof getNotificationQuerySchema.params
+  typeof getNotificationQuerySchema.query
 >;
 
 export type INotificationParamsDTO = z.infer<

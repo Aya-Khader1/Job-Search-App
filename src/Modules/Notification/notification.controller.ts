@@ -18,7 +18,7 @@ router.patch(
   validation(validators.IdParamsNotificationSchema),
   notificationService.markAsRead,
 );
-router.patch("/mark-all-read", notificationService.markAsRead);
+router.patch("/mark-all-read", notificationService.markAllAsRead);
 router.delete(
   "/:notificationId",
   validation(validators.IdParamsNotificationSchema),

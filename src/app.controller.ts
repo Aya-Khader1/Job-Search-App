@@ -19,17 +19,13 @@ import { schema } from "./Modules/Admin/graphql/admin.schema";
 import { buildContext } from "./Modules/Admin/graphql/admin.context";
 import { intializeSocket } from "./Utils/socket/socket.service";
 import { startExpiredOtpCleanupJob } from "./Utils/corn/deleteExpiredOtp.cron";
+import { notificationController } from "./Modules/Notification";
 export const bootsrap = async (): Promise<void> => {
   const app: Express = express();
+  app.set("trust proxy", 1);
   app.use(express.json());
   await connectDB();
-  app.use(
-    helmet(),
-    cors({
-      origin: "*",
-    }),
-    customRateLimiter(),
-  );
+  app.use(helmet(), cors(optionCors), customRateLimiter());
   app.all(
     "/graphql",
     createHandler({
@@ -53,13 +49,15 @@ export const bootsrap = async (): Promise<void> => {
   app.use("/api/v1/company", CompanyController);
   app.use("/api/v1/job", jobController);
   app.use("/api/v1/chat", chatController);
+  app.use("/api/v1/notification", notificationController);
+
   app.get("/", (req, res) => {
     res.send("Hello");
   });
   app.use(globalHandeler);
   startExpiredOtpCleanupJob();
-  app.listen(Number(env.PORT), () => {
+  const httpServer = app.listen(Number(env.PORT), () => {
     console.log(`Server is running on http://localhost:${env.PORT}`);
   });
-  //  intializeSocket(httpServer);
+  intializeSocket(httpServer);
 };
